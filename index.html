@@ -178,7 +178,7 @@ footer a{color:#fff}
 @media (max-width:560px){.stat .lbl{font-size:.62rem;letter-spacing:.14em}}
 /* Profile wall: frames hang crooked and straighten when they come into view */
 .pwall h2{margin-bottom:1.8rem}
-.frames{display:grid;grid-template-columns:repeat(6,1fr);gap:1.4rem;align-items:end}
+.frames{display:grid;grid-template-columns:repeat(6,1fr);gap:2rem;align-items:end}
 @media (max-width:820px){.frames{grid-template-columns:repeat(3,1fr);gap:1.6rem 1rem}}
 .pf{margin:0;position:relative;display:flex;flex-direction:column;align-items:center;padding-top:26px}
 .pf .nail{position:absolute;top:0;left:50%;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:#8a8d92}
@@ -192,6 +192,13 @@ footer a{color:#fff}
 .pf figcaption{margin-top:.8rem;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
 .pnote{margin:1.6rem 0 0;color:var(--muted);font-size:.95rem}
 @media (prefers-reduced-motion:reduce){.pf .fr{transform:none}}
+
+/* Services: rows slide in and the copper squares are "stamped" one by one */
+.svc>div{opacity:0;transform:translateY(12px);transition:opacity .6s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
+.svc>div .sq{transform:scale(0) rotate(-30deg);transition:transform .5s cubic-bezier(.3,1.6,.4,1) .25s}
+.svc>div.in{opacity:1;transform:none}
+.svc>div.in .sq{transform:none}
+@media (prefers-reduced-motion:reduce){.svc>div{opacity:1;transform:none}.svc>div .sq{transform:none}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -365,6 +372,33 @@ document.getElementById('loadFeed').onclick=()=>{
 (function(){const fs=[...document.querySelectorAll('.pf')];
   const o=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){const i=fs.indexOf(x.target);setTimeout(()=>x.target.classList.add('straight'),i*140);o.unobserve(x.target)}}),{threshold:.6});
   fs.forEach(f=>o.observe(f));})();
+
+/* Service rows appear one by one */
+(function(){const rows=[...document.querySelectorAll('.svc>div')];
+  const o=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){const i=rows.indexOf(x.target);setTimeout(()=>x.target.classList.add('in'),(i%2)*120+Math.floor(i/2)*60);o.unobserve(x.target)}}),{threshold:.3});
+  rows.forEach(r=>o.observe(r));})();
+/* Hanging frames swing gently when you scroll, then settle */
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const frs=[...document.querySelectorAll('.pf')].map((el,i)=>({el,fr:el.querySelector('.fr'),a:0,v:0,k:.06+i*.004,live:false}));
+  let lastY=scrollY, running=false;
+  frs.forEach(f=>{f.el.addEventListener('transitionend',()=>{},{once:true});
+    new MutationObserver(()=>{if(f.el.classList.contains('straight')&&!f.live){setTimeout(()=>{f.live=true;f.fr.style.transition='none'},1150)}}).observe(f.el,{attributes:true,attributeFilter:['class']});});
+  function tick(){
+    const y=scrollY, dy=y-lastY; lastY=y;
+    let moving=false;
+    frs.forEach((f,i)=>{
+      if(!f.live) return;
+      f.v+= -dy*0.006*(i%2?1:-1);          /* push from scroll speed, alternate directions */
+      f.v+= -f.k*f.a;  f.v*=0.9;  f.a+=f.v;      /* spring + damping */
+      f.a=Math.max(-3,Math.min(3,f.a));
+      f.fr.style.transform='rotate('+f.a.toFixed(2)+'deg)';
+      if(Math.abs(f.a)>.02||Math.abs(f.v)>.02) moving=true;
+    });
+    if(moving||Math.abs(dy)>0) requestAnimationFrame(tick); else running=false;
+  }
+  addEventListener('scroll',()=>{if(!running){running=true;requestAnimationFrame(tick)}},{passive:true});
+})();
 const days=["søndag","mandag","tirsdag","onsdag","torsdag","fredag","lørdag"];
 const hrs={1:[10,16],2:[10,16],3:[10,16],4:[10,18],5:[10,16],6:[10,14],0:null};
 const t=h=>String(Math.floor(h)).padStart(2,'0')+':'+String(Math.round((h%1)*60)).padStart(2,'0');
