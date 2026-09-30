@@ -154,10 +154,25 @@ footer a{color:#fff}
 .fade{opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.8,.2,1)}
 .fade.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.fade{opacity:1;transform:none}}
+
+
+
+/* Frame around the Facebook feed is built as you scroll (and unbuilt when scrolling back up) */
+.build-frame{position:relative;background:transparent!important;padding:0!important;box-shadow:none!important}
+.build-frame .shadowlayer{position:absolute;inset:0;box-shadow:0 30px 50px -30px rgba(0,0,0,.45),0 2px 4px rgba(0,0,0,.12);opacity:0;pointer-events:none}
+.edge{position:absolute;z-index:2;background:linear-gradient(135deg,#2e3136,#121315 50%,#282b30);will-change:transform}
+.e-t{top:0;left:0;right:0;height:10px;transform:scaleX(0);transform-origin:left;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,10px 100%)}
+.e-r{top:0;right:0;bottom:0;width:10px;transform:scaleY(0);transform-origin:top;clip-path:polygon(0 0,100% 0,100% 100%,0 100%,0 calc(100% - 10px),0 10px)}
+.e-b{bottom:0;left:0;right:0;height:10px;transform:scaleX(0);transform-origin:right;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 100%,0 100%)}
+.e-l{top:0;left:0;bottom:0;width:10px;transform:scaleY(0);transform-origin:bottom;clip-path:polygon(0 0,100% 10px,100% calc(100% - 10px),0 100%)}
+.ck{position:absolute;z-index:3;width:10px;height:10px;background:var(--copper);opacity:0}
+.k1{top:0;left:0}.k2{top:0;right:0}.k3{bottom:0;right:0}.k4{bottom:0;left:0}
+.build-frame .pp{position:relative;z-index:1;margin:10px;opacity:0;will-change:opacity,transform}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
+
 
 <div class="draft">Forslag til ny nettside for Haavik Rammer &amp; Kunst, laget av VLN. Ikke publisert ennå.</div>
 
@@ -202,7 +217,7 @@ footer a{color:#fff}
       <p>Her legger vi ut nye kunstverk, trykk og innramminger så snart de kommer inn.</p>
       <a class="btn primary" href="https://www.facebook.com/haavikgalleri"><svg class="fbi" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.5 1.6-1.5h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.4 0-4.1 1.5-4.1 4.2v2.3H7.5V14h2.7v8z"/></svg>Gå til Facebook-siden</a>
     </div>
-    <div class="frame fade"><div class="pp"><div class="feed" id="feed">
+    <div class="frame build-frame" id="fbframe"><i class="shadowlayer"></i><i class="edge e-t"></i><i class="edge e-r"></i><i class="edge e-b"></i><i class="edge e-l"></i><i class="ck k1"></i><i class="ck k2"></i><i class="ck k3"></i><i class="ck k4"></i><div class="pp"><div class="feed" id="feed">
       <div class="feed-ph">
         <span class="ico"><svg class="fbi" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.5 1.6-1.5h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.4 0-4.1 1.5-4.1 4.2v2.3H7.5V14h2.7v8z"/></svg></span>
         <b>HAAVIK RAMMER &amp; KUNST</b>
@@ -272,6 +287,37 @@ document.getElementById('loadFeed').onclick=()=>{
   const f=document.getElementById('feed'), w=Math.min(500,Math.max(280,f.clientWidth));
   f.innerHTML='<iframe title="Facebook-innlegg fra Haavik Rammer og Kunst" src="https://www.facebook.com/plugins/page.php?href='+encodeURIComponent('https://www.facebook.com/haavikgalleri')+'&tabs=timeline&width='+w+'&height=600&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=false" loading="lazy" allow="encrypted-media"></iframe>';
 };
+
+
+
+/* Frame around the feed: built progressively with scroll position */
+(function(){
+  const f=document.getElementById('fbframe'); if(!f) return;
+  const q=c=>f.querySelector(c);
+  const et=q('.e-t'),er=q('.e-r'),eb=q('.e-b'),el=q('.e-l'),pp=q('.pp'),sh=q('.shadowlayer');
+  const ks=[q('.k1'),q('.k2'),q('.k3'),q('.k4')];
+  const cl=v=>Math.max(0,Math.min(1,v)), seg=(p,a,b)=>cl((p-a)/(b-a)), ease=t=>1-Math.pow(1-t,2);
+  const bump=(p,c,w=.06)=>cl(1-Math.abs(p-c)/w);
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function render(){
+    let p=1;
+    if(!reduce){
+      const r=f.getBoundingClientRect(), vh=innerHeight;
+      const start=vh*0.8, end=vh*0.38-r.height*0.5;   /* from top edge entering to frame centred */
+      p=cl((start-r.top)/(start-end));
+    }
+    et.style.transform='scaleX('+ease(seg(p,0,.2))+')';
+    er.style.transform='scaleY('+ease(seg(p,.2,.4))+')';
+    eb.style.transform='scaleX('+ease(seg(p,.4,.6))+')';
+    el.style.transform='scaleY('+ease(seg(p,.6,.8))+')';
+    ks[0].style.opacity=bump(p,.02,.05); ks[1].style.opacity=bump(p,.2); ks[2].style.opacity=bump(p,.4); ks[3].style.opacity=bump(p,.6); 
+    const m=ease(seg(p,.8,1)); pp.style.opacity=m; pp.style.transform='scale('+(.97+.03*m)+')';
+    sh.style.opacity=seg(p,.85,1);
+  }
+  render();
+  addEventListener('scroll',()=>requestAnimationFrame(render),{passive:true});
+  addEventListener('resize',render);
+})();
 const days=["søndag","mandag","tirsdag","onsdag","torsdag","fredag","lørdag"];
 const hrs={1:[10,16],2:[10,16],3:[10,16],4:[10,18],5:[10,16],6:[10,14],0:null};
 const t=h=>String(Math.floor(h)).padStart(2,'0')+':'+String(Math.round((h%1)*60)).padStart(2,'0');
