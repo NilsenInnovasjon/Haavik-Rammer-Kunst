@@ -299,13 +299,15 @@ document.getElementById('loadFeed').onclick=()=>{
   const cl=v=>Math.max(0,Math.min(1,v)), seg=(p,a,b)=>cl((p-a)/(b-a)), ease=t=>1-Math.pow(1-t,2);
   const bump=(p,c,w=.06)=>cl(1-Math.abs(p-c)/w);
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let maxP=0;
   function render(){
     let p=1;
     if(!reduce){
       const r=f.getBoundingClientRect(), vh=innerHeight;
       const start=vh*0.8, end=vh*0.38-r.height*0.5;   /* from top edge entering to frame centred */
-      p=cl((start-r.top)/(start-end));
+      p=Math.max(maxP,cl((start-r.top)/(start-end)));
     }
+    maxP=p;
     et.style.transform='scaleX('+ease(seg(p,0,.2))+')';
     er.style.transform='scaleY('+ease(seg(p,.2,.4))+')';
     eb.style.transform='scaleX('+ease(seg(p,.4,.6))+')';
